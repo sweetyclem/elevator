@@ -54,15 +54,17 @@ class Elevator
                 sleep(1)
                 @mutex.synchronize {
                     if @calls[@current_floor]
-                        @calls[@current_floor].each { |call|                            
-                            if @going_up == call.going_up && call.source_floor == @current_floor
-                                if @riders[call.nb - 1]
-                                    rider = @riders[call.nb - 1]
+                        @calls[@current_floor].each { |call|
+                            if (@going_up == call.going_up && call.source_floor == @current_floor )|| @current_floor == @dest_floor
+                                if @riders.any?{|r| r.nb == call.nb}
+                                    rider = @riders[@riders.find_index {|r| r.nb == call.nb}]
                                     rider.gets_in(call.going_up, @current_floor)
+                                    @going_up = rider.dest_floor > @current_floor ? true : false
                                 else
                                     rider = ElevatorRider.new(call.nb)
                                     rider.gets_in(call.going_up, @current_floor)
                                     @riders << rider
+                                    @going_up = rider.dest_floor > @current_floor ? true : false
                                 end
                                 if @calls[call.source_floor].length > 1
                                     @calls[call.source_floor].delete_at(call.nb - 1)
@@ -77,14 +79,12 @@ class Elevator
                     end
                 }
                 @mutex.synchronize {
-                    @riders.each { |rider| 
-                        if rider.dest_floor == @current_floor
-                            puts "Person #{rider.nb} gets out at floor #{@current_floor}"
-                            riders.delete(rider)
+                    @riders.each { |r| 
+                        if r.dest_floor == @current_floor
+                            puts "Person #{r.nb} gets out at floor #{@current_floor}"
+                            @riders.delete(r)
                         end
                     }
-                puts "riders: #{riders.inspect}"
-                puts "calls: #{calls.inspect}"
                 }
             end
         end
