@@ -1,7 +1,9 @@
+require 'thread'
 NB_FLOORS = 10
 
 class ElevatorCall
-    attr_reader :nb, :source_floor, :going_up, :dest_floor
+    attr_reader :nb, :source_floor, :going_up
+    attr_accessor :dest_floor
     def initialize(nb, source_floor, going_up)
         @nb = nb
         @source_floor = source_floor
@@ -9,7 +11,7 @@ class ElevatorCall
         @dest_floor = nil
     end
     def to_s
-        "Call from #{@source_floor} going #{@going_up ? "up" : "down"}"
+        "Call from person #{nb} at floor #{@source_floor} going #{@going_up ? "up" : "down"}"
     end
 end
 
@@ -28,12 +30,12 @@ class Elevator
             sleep(1)
             @mutex.synchronize {
                 if @calls_up.empty? && @calls_down.empty?
-                    puts "L'ascenseur est au #{@current_floor}"
+                    puts "Elevator is at floor #{@current_floor}"
                 end
                 if @current_call
                     while @current_floor != @current_call.source_floor
                         @current_floor += 1
-                        puts "L'ascenseur va au #{@current_floor}"
+                        puts "Elevator going to floor #{@current_floor}"
                         sleep(1)
                     end
                     if @current_call.going_up
@@ -41,12 +43,28 @@ class Elevator
                     else
                         @current_call.dest_floor = Random.rand(0..@current_floor-1)
                     end
-                    puts "la personne va à l'étage #{@current_call.dest_floor}"
+                    puts "Person #{@current_call.nb} gets in, is going to floor #{@current_call.dest_floor}"
                     while @current_floor != @current_call.dest_floor
                         @current_call.going_up ? @current_floor += 1 : @current_floor -=1
-                        puts "L'ascenseur va au #{@current_floor}"
-                        sleep(1)
+                        puts "Elevator going to floor #{@current_floor}"
                     end
+                    puts @calls_up.inspect
+                    puts @calls_down.inspect
+                    if @current_call.going_up
+                        if @calls_up[@current_call.source_floor].length > 1
+                            @calls_up[@current_call.source_floor].delete_at(@current_call.nb - 1)
+                        else
+                            @calls_up.delete(@current_call.source_floor)
+                        end
+                    else
+                        if @calls_down[@current_call.source_floor].length > 1
+                            @calls_down[@current_call.source_floor].delete_at(@current_call.nb - 1)
+                        else
+                            @calls_down.delete(@current_call.source_floor)
+                        end
+                    end
+                    puts @calls_up.inspect
+                    puts @calls_down.inspect
                     @current_call = nil
                 end
             }
@@ -55,17 +73,16 @@ class Elevator
     def insert_call(call)
         if @current_call == nil
             @current_call = call
-        else
-            @mutex.synchronize {
-                if call.going_up
-                    @calls_up[call.source_floor] ||= []
-                    @calls_up[call.source_floor] << call
-                else
-                    @calls_down[call.source_floor] ||= []
-                    @calls_down[call.source_floor] << call
-                end
-            }
         end
+        @mutex.synchronize {
+            if call.going_up
+                @calls_up[call.source_floor] ||= []
+                @calls_up[call.source_floor] << call
+            else
+                @calls_down[call.source_floor] ||= []
+                @calls_down[call.source_floor] << call
+            end
+        }
     end
 end
 
@@ -82,7 +99,6 @@ end
 
 def main
     elevator = Elevator.new
-    call = ElevatorCall.new(3, false)
     threads = []
     threads << Thread.new {elevator.run}
     threads << Thread.new {generate_call(elevator)}
