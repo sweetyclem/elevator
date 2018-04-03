@@ -49,21 +49,22 @@ class Elevator
             }
             @mutex.synchronize {
                 while @current_floor != @dest_floor
-                    # @going_up = @dest_floor > @current_floor ? true : false
                     @going_up ? @current_floor +=1 : @current_floor -= 1
                     puts "Elevator going to floor #{@current_floor}"
+                    sleep(1)
                     if @calls[@current_floor]
-                        @calls[@current_floor].each { |call| 
-                            if call.going_up == @going_up && call.source_floor == @current_floor
+                        @calls[@current_floor].each { |call|
+                            if @dest_floor == @current_floor
+                                @going_up= call.going_up
+                            end
+                            if @going_up == call.going_up && call.source_floor == @current_floor
                                 rider = ElevatorRider.new(call.nb)
                                 rider.gets_in(call.going_up, @current_floor)
-                                if !riders.include?(rider)
-                                    @riders << rider
-                                    if @calls[call.source_floor].length > 1
-                                        @calls[call.source_floor].delete_at(call.nb - 1)
-                                    else
-                                        @calls.delete(call.source_floor)
-                                    end
+                                @riders << rider
+                                if @calls[call.source_floor].length > 1
+                                    @calls[call.source_floor].delete_at(call.nb - 1)
+                                else
+                                    @calls.delete(call.source_floor)
                                 end
                                 if @dest_floor == @current_floor
                                     @dest_floor = rider.dest_floor
@@ -85,6 +86,9 @@ end
         @mutex.synchronize {
             if @riders.empty?
                 @dest_floor = call.source_floor
+                if @calls.empty?
+                    @going_up = @dest_floor > @current_floor ? true : false
+                end
             end
             @calls[call.source_floor] ||= []
             @calls[call.source_floor] << call
