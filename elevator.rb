@@ -39,6 +39,7 @@ class Elevator
         @going_up = true
         @mutex = Mutex.new
     end
+
     def run
         while 42
             sleep(1)
@@ -47,20 +48,22 @@ class Elevator
                     puts "Elevator is at floor #{@current_floor}"
                 end
             }
-            @mutex.synchronize {
-                while @current_floor != @dest_floor
-                    @going_up ? @current_floor +=1 : @current_floor -= 1
-                    puts "Elevator going to floor #{@current_floor}"
-                    sleep(1)
+            while @current_floor != @dest_floor #&& @current_floor >= 0 && @current_floor <= NB_FLOORS
+                @going_up ? @current_floor +=1 : @current_floor -= 1
+                puts "Elevator going to floor #{@current_floor}"
+                sleep(1)
+                @mutex.synchronize {
                     if @calls[@current_floor]
-                        @calls[@current_floor].each { |call|
-                            if @dest_floor == @current_floor
-                                @going_up= call.going_up
-                            end
+                        @calls[@current_floor].each { |call|                            
                             if @going_up == call.going_up && call.source_floor == @current_floor
-                                rider = ElevatorRider.new(call.nb)
-                                rider.gets_in(call.going_up, @current_floor)
-                                @riders << rider
+                                if @riders[call.nb - 1]
+                                    rider = @riders[call.nb - 1]
+                                    rider.gets_in(call.going_up, @current_floor)
+                                else
+                                    rider = ElevatorRider.new(call.nb)
+                                    rider.gets_in(call.going_up, @current_floor)
+                                    @riders << rider
+                                end
                                 if @calls[call.source_floor].length > 1
                                     @calls[call.source_floor].delete_at(call.nb - 1)
                                 else
@@ -72,20 +75,27 @@ class Elevator
                             end
                         }
                     end
+                }
+                @mutex.synchronize {
                     @riders.each { |rider| 
                         if rider.dest_floor == @current_floor
                             puts "Person #{rider.nb} gets out at floor #{@current_floor}"
                             riders.delete(rider)
                         end
                     }
-                end
-            }
+                puts "riders: #{riders.inspect}"
+                puts "calls: #{calls.inspect}"
+                }
+            end
+        end
     end
-end
+
     def insert_call(call)
         @mutex.synchronize {
             if @riders.empty?
                 @dest_floor = call.source_floor
+                rider = ElevatorRider.new(call.nb)
+                @riders << rider
                 if @calls.empty?
                     @going_up = @dest_floor > @current_floor ? true : false
                 end
