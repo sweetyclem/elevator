@@ -9,7 +9,7 @@ class ElevatorCall
         @going_up = going_up
     end
     def to_s
-        "Call from person #{nb} at floor #{@source_floor} going #{@going_up ? "up" : "down"}"
+        "Call from person #{@nb} at floor #{@source_floor} going #{@going_up ? "up" : "down"}"
     end
 end
 
@@ -26,6 +26,9 @@ class ElevatorRider
             @dest_floor = Random.rand(0..current_floor-1)
         end
         puts "Person #{@nb} gets in, is going to floor #{@dest_floor}"
+    end
+    def to_s
+        "Person #{@nb} -> floor #{@dest_floor ? @dest_floor : '?'}"
     end
 end
 
@@ -53,7 +56,7 @@ class Elevator
             if @current_floor == @dest_floor && !@riders.empty?
                 @dest_floor = @riders[0].dest_floor
                 @riders.each { | rider |
-                    if (@going_up && rider.dest_floor <  @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
+                    if (@going_up && rider.dest_floor < @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
                         @dest_floor = call.source_floor
                     end
                 }
@@ -71,7 +74,9 @@ class Elevator
             while @current_floor != @dest_floor #&& @current_floor >= 0 && @current_floor <= NB_FLOORS
                 @going_up = @dest_floor > @current_floor ? true : false
                 @going_up ? @current_floor +=1 : @current_floor -= 1
-                puts "Elevator going to floor #{@current_floor}"
+                print "Elevator going to floor #{@current_floor} | "
+                @riders.each { | rider | print "#{rider.to_s} - " }
+                print "\n"
                 sleep(1)
                 @mutex.synchronize {
                     if @calls[@current_floor]
@@ -80,14 +85,14 @@ class Elevator
                                 if @riders.any?{|r| r.nb == call.nb}
                                     rider = @riders[@riders.find_index {|r| r.nb == call.nb}]
                                     rider.gets_in(call.going_up, @current_floor)
-                                    if (@going_up && rider.dest_floor <  @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
+                                    if (@going_up && rider.dest_floor < @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
                                         @dest_floor = rider.dest_floor
                                     end
                                 else
                                     rider = ElevatorRider.new(call.nb)
                                     rider.gets_in(call.going_up, @current_floor)
                                     @riders << rider
-                                    if (@going_up && rider.dest_floor <  @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
+                                    if (@going_up && rider.dest_floor < @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
                                         @dest_floor = rider.dest_floor
                                     end
                                 end
@@ -131,8 +136,9 @@ end
 def generate_call(elevator)
     i = 1
     while 42
-        sleep(Random.rand(1..5))
+        sleep(Random.rand(2..5))
         source_floor = Random.rand(0..NB_FLOORS)
+        # source_floor = gets.to_i
         if source_floor == 0
             going_up = true
         elsif source_floor == NB_FLOORS
