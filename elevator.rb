@@ -68,8 +68,9 @@ class Elevator
 
     def take_passengers
         @mutex.synchronize {
+            to_delete = []
             if @calls[@current_floor]
-                @calls[@current_floor].each { |call|
+                @calls[@current_floor].each.with_index { |call, index|
                     if (@going_up == call.going_up && call.source_floor == @current_floor )|| @current_floor == @dest_floor
                         if @riders.any?{|r| r.nb == call.nb}
                             rider = @riders[@riders.find_index {|r| r.nb == call.nb}]
@@ -85,17 +86,20 @@ class Elevator
                                 @dest_floor = rider.dest_floor
                             end
                         end
-                        if @calls[call.source_floor].length > 1
-                            @calls[call.source_floor].delete_at(call.nb - 1)
-                        else
-                            @calls.delete(call.source_floor)
-                        end
+                        to_delete.unshift(index)
                         if @current_floor == @dest_floor
                             @dest_floor = rider.dest_floor
                         end
                     end
                 }
             end
+            to_delete.each { |index|
+                if @calls[@current_floor].length > 1
+                    @calls[@current_floor].delete_at(index)
+                else
+                    @calls.delete(@current_floor)
+                end
+            }
         }
     end
 
@@ -168,8 +172,8 @@ def generate_call(elevator)
     i = 1
     while 42
         sleep(Random.rand(4..10))
-        source_floor = Random.rand(0..NB_FLOORS)
         # source_floor = gets.to_i
+        source_floor = Random.rand(0..NB_FLOORS)
         if source_floor == 0
             going_up = true
         elsif source_floor == NB_FLOORS
