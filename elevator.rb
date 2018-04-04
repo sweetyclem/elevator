@@ -24,6 +24,7 @@ class ElevatorRider
     end
 
     def gets_in(going_up, current_floor)
+        # @dest_floor = gets.to_i
         if going_up
             @dest_floor = Random.rand(current_floor+1..NB_FLOORS)
         else
@@ -126,22 +127,23 @@ class Elevator
             sleep(2)
             take_passengers()
             @mutex.synchronize {
-                if @current_floor == @dest_floor && !@riders.empty?
+                if @current_floor == @dest_floor && !@riders.empty? #If there are people in the elevator, drop the nearest one
                     @dest_floor = @riders[0].dest_floor
                     @riders.each { | rider |
                         if rider.dest_floor && ((@going_up && rider.dest_floor < @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor))
                             @dest_floor = rider.dest_floor
                         end
                     }
-                elsif @current_floor == @dest_floor && @riders.empty? && !@calls.empty?
-                    @dest_floor = @calls.values[0][0].source_floor
-                    @calls.each { | source_floor, calls |
-                        calls.each { | call |
-                            if call.source_floor < @dest_floor
-                                @dest_floor = call.source_floor
+                elsif @current_floor == @dest_floor && @riders.empty? && !@calls.empty? #If the elevator is empty, get to next call's floor
+                    oldest_call = @calls.values[0][0]
+                    @calls.each { | source_floor, floor_calls |
+                        floor_calls.each { | call |
+                            if call.nb < oldest_call.nb
+                                oldest_call = call
                             end
                         }
                     }
+                    @dest_floor = oldest_call.source_floor
                 end
             }
             while @current_floor != @dest_floor && @current_floor >= 0 && @current_floor <= NB_FLOORS
@@ -168,10 +170,10 @@ class Elevator
     end
 end
 
-def generate_call(elevator)
+def generate_calls(elevator)
     i = 1
     while 42
-        sleep(Random.rand(4..10))
+        sleep(Random.rand(4..15))
         # source_floor = gets.to_i
         source_floor = Random.rand(0..NB_FLOORS)
         if source_floor == 0
@@ -192,7 +194,7 @@ def main
     elevator = Elevator.new
     threads = []
     threads << Thread.new {elevator.run}
-    threads << Thread.new {generate_call(elevator)}
+    threads << Thread.new {generate_calls(elevator)}
     threads.each { |thread| thread.join }    
 end
 
