@@ -48,32 +48,31 @@ class Elevator
                     puts "Elevator is at floor #{@current_floor}"
                 end
             }
+            # puts "riders: #{@riders.inspect}"
+            # puts "calls: #{@calls.inspect}"
             if @current_floor == @dest_floor && !@riders.empty?
                 @dest_floor = @riders[0].dest_floor
-                puts "dest : #{@dest_floor}"
                 @riders.each { | rider |
                     if (@going_up && rider.dest_floor <  @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
                         @dest_floor = call.source_floor
                     end
                 }
-            # elsif @current_floor == @dest_floor && @riders.empty? && !@calls.empty?
-            #     @dest_floor = @calls.values[0][0].source_floor
-            #     puts "dest : #{@dest_floor}"
-            #     @calls.each { | floor |
-            #         floor.each { | call |
-            #             if call.source_floor < @dest_floor
-            #                 @dest_floor = call.source_floor
-            #             end
-            #         }
-            #     }
+            elsif @current_floor == @dest_floor && @riders.empty? && !@calls.empty?
+                @dest_floor = @calls.values[0][0].source_floor
+                puts "dest : #{@dest_floor}"
+                @calls.each { | source_floor, calls |
+                    calls.each { | call |
+                        if call.source_floor < @dest_floor
+                            @dest_floor = call.source_floor
+                        end
+                    }
+                }
             end
             while @current_floor != @dest_floor #&& @current_floor >= 0 && @current_floor <= NB_FLOORS
                 @going_up = @dest_floor > @current_floor ? true : false
                 @going_up ? @current_floor +=1 : @current_floor -= 1
                 puts "Elevator going to floor #{@current_floor}"
                 sleep(1)
-                # puts "riders: #{@riders.inspect}"
-                # puts "calls: #{@calls.inspect}"
                 @mutex.synchronize {
                     if @calls[@current_floor]
                         @calls[@current_floor].each { |call|
@@ -132,7 +131,8 @@ end
 def generate_call(elevator)
     i = 1
     while 42
-        source_floor = gets.to_i
+        sleep(Random.rand(1..5))
+        source_floor = Random.rand(0..NB_FLOORS)
         if source_floor == 0
             going_up = true
         elsif source_floor == NB_FLOORS
