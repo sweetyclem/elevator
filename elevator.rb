@@ -133,7 +133,14 @@ def generate_call(elevator)
     i = 1
     while 42
         source_floor = gets.to_i
-        call = ElevatorCall.new(i, source_floor, [true, false].sample)
+        if source_floor == 0
+            going_up = true
+        elsif source_floor == NB_FLOORS
+            going_up = false
+        else
+            going_up = [true, false].sample
+        end
+        call = ElevatorCall.new(i, source_floor, going_up)
         i += 1
         elevator.insert_call(call)
         puts call
