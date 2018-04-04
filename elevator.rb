@@ -118,7 +118,7 @@ class Elevator
     end
 
     def run
-        while 42
+        loop do
             @mutex.synchronize {
                 if @riders.empty? && @calls.empty?
                     puts "Elevator is at floor #{@current_floor}"
@@ -172,7 +172,7 @@ end
 
 def generate_calls(elevator)
     i = 1
-    while 42
+    loop do
         sleep(Random.rand(4..15))
         # source_floor = gets.to_i
         source_floor = Random.rand(0..NB_FLOORS)
@@ -195,7 +195,7 @@ def main
     threads = []
     threads << Thread.new {elevator.run}
     threads << Thread.new {generate_calls(elevator)}
-    threads.each { |thread| thread.join }    
+    threads.each { |thread| thread.join }
 end
 
 main()
