@@ -101,12 +101,14 @@ class Elevator
 
     def leave_passengers
         @mutex.synchronize {
-            @riders.each { |r| 
-                if r.dest_floor == @current_floor
-                    puts "Person #{r.nb} gets out at floor #{@current_floor}"
-                    @riders.delete(r)
+            to_delete = []
+            @riders.each.with_index { |rider, index| 
+                if rider.dest_floor == @current_floor
+                    puts "Person #{rider.nb} gets out at floor #{@current_floor}"
+                    to_delete.unshift(index)
                 end
             }
+            to_delete.each { |index| @riders.delete_at(index) }
         }
     end
 
