@@ -118,11 +118,7 @@ class Elevator
 
     def run
         loop do
-            @mutex.synchronize {
-                if @riders.empty? && @calls.empty?
-                    puts "Elevator is at floor #{@current_floor}"
-                end
-            }
+            print_floor()
             sleep(2)
             take_passengers()
             @mutex.synchronize {
@@ -191,7 +187,7 @@ end
 def main
     elevator = Elevator.new
     threads = []
-    threads << Thread.new {elevator.run}
+    threads << Thread.new {elevator.run()}
     threads << Thread.new {generate_calls(elevator)}
     threads.each { |thread| thread.join }
 end
