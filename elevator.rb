@@ -24,7 +24,6 @@ class ElevatorRider
     end
 
     def gets_in(going_up, current_floor)
-        # @dest_floor = gets.to_i
         if going_up
             @dest_floor = Random.rand(current_floor+1..NB_FLOORS)
         else
@@ -174,7 +173,6 @@ def generate_calls(elevator)
     i = 1
     loop do
         sleep(Random.rand(4..15))
-        # source_floor = gets.to_i
         source_floor = Random.rand(0..NB_FLOORS)
         if source_floor == 0
             going_up = true
