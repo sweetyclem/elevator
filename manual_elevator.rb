@@ -115,37 +115,43 @@ class Elevator
         }
     end
 
+    def get_destination
+        @mutex.synchronize {
+            if @current_floor == @dest_floor && !@riders.empty? #If there are people in the elevator, drop the nearest one
+                @dest_floor = @riders[0].dest_floor
+                @riders.each { | rider |
+                    if rider.dest_floor && ((@going_up && rider.dest_floor < @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor))
+                        @dest_floor = rider.dest_floor
+                    end
+                }
+            elsif @current_floor == @dest_floor && @riders.empty? && !@calls.empty? #If the elevator is empty, get to next call's floor
+                oldest_call = @calls.values[0][0]
+                puts "oldest call : #{oldest_call}"
+                @calls.each { | source_floor, floor_calls |
+                    floor_calls.each { | call |
+                        if call.nb < oldest_call.nb
+                            oldest_call = call
+                        end
+                    }
+                }
+                @dest_floor = oldest_call.source_floor
+            end
+        }
+    end
+
     def run
         loop do
             print_floor()
             sleep(2)
             take_passengers()
-            @mutex.synchronize {
-                if @current_floor == @dest_floor && !@riders.empty? #If there are people in the elevator, drop the nearest one
-                    @dest_floor = @riders[0].dest_floor
-                    @riders.each { | rider |
-                        if rider.dest_floor && ((@going_up && rider.dest_floor < @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor))
-                            @dest_floor = rider.dest_floor
-                        end
-                    }
-                elsif @current_floor == @dest_floor && @riders.empty? && !@calls.empty? #If the elevator is empty, get to next call's floor
-                    oldest_call = @calls.values[0][0]
-                    @calls.each { | source_floor, floor_calls |
-                        floor_calls.each { | call |
-                            if call.nb < oldest_call.nb
-                                oldest_call = call
-                            end
-                        }
-                    }
-                    @dest_floor = oldest_call.source_floor
-                end
-            }
+            get_destination()
             while @current_floor != @dest_floor && @current_floor >= 0 && @current_floor <= NB_FLOORS
                 @going_up = @dest_floor > @current_floor ? true : false
                 @going_up ? @current_floor +=1 : @current_floor -= 1
                 print_floor()
                 take_passengers()
                 leave_passengers()
+                get_destination()
                 sleep(2)
             end
         end
