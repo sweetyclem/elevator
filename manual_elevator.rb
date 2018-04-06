@@ -49,6 +49,30 @@ class Elevator
         @mutex = Mutex.new
     end
 
+    def generate_calls
+		loop do
+			source_floor = gets.to_i
+			dest_floor = gets.to_i
+			going_up = source_floor < dest_floor ? true : false
+			call = ElevatorCall.new(@count, source_floor, going_up, dest_floor)
+			@count += 1
+			insert_call(call)
+			puts call
+		end
+    end
+    
+    def insert_call(call)
+        @mutex.synchronize {
+            if @riders.empty?
+                @dest_floor = call.source_floor
+                rider = ElevatorRider.new(call.nb)
+                @riders << rider
+            end
+            @calls[call.source_floor] ||= []
+            @calls[call.source_floor] << call
+        }
+	end
+
     def print_floor
         @mutex.synchronize {
             if @riders.empty? && @calls.empty?
@@ -157,29 +181,6 @@ class Elevator
         end
     end
 
-    def insert_call(call)
-        @mutex.synchronize {
-            if @riders.empty?
-                @dest_floor = call.source_floor
-                rider = ElevatorRider.new(call.nb)
-                @riders << rider
-            end
-            @calls[call.source_floor] ||= []
-            @calls[call.source_floor] << call
-        }
-	end
-
-	def generate_calls
-		loop do
-			source_floor = gets.to_i
-			dest_floor = gets.to_i
-			going_up = source_floor < dest_floor ? true : false
-			call = ElevatorCall.new(@count, source_floor, going_up, dest_floor)
-			@count += 1
-			insert_call(call)
-			puts call
-		end
-	end
 end
 
 def main
