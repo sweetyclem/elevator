@@ -52,16 +52,11 @@ class Elevator
 
     def insert_call(call)
         @mutex.synchronize {
-            if @riders.empty?
-                @dest_floor = call.source_floor
-                rider = ElevatorRider.new(call.nb)
-                @riders << rider
-            end
             @calls[call.source_floor] ||= []
             @calls[call.source_floor] << call
         }
     end
-    
+
     def print_floor
         @mutex.synchronize {
             if @riders.empty? && @calls.empty?
@@ -83,23 +78,15 @@ class Elevator
             to_delete = []
             if @calls[@current_floor]
                 @calls[@current_floor].each.with_index { |call, index|
-                    if (@going_up == call.going_up && call.source_floor == @current_floor )|| @current_floor == @dest_floor
-                        if @riders.any?{|r| r.nb == call.nb}
-                            rider = @riders[@riders.find_index {|r| r.nb == call.nb}]
-                            rider.gets_in(call.going_up, @current_floor)
-                            if (@going_up && rider.dest_floor < @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
-                                @dest_floor = rider.dest_floor
-                            end
-                        else
-                            rider = ElevatorRider.new(call.nb)
-                            rider.gets_in(call.going_up, @current_floor)
-                            @riders << rider
-                            if (@going_up && rider.dest_floor < @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
-                                @dest_floor = rider.dest_floor
-                            end
+                    if (@going_up == call.going_up && call.source_floor == @current_floor )|| @current_floor == @dest_floor #If a call is on my way or I reached the current call
+                        rider = ElevatorRider.new(call.nb)
+                        rider.gets_in(call.going_up, @current_floor)
+                        @riders << rider
+                        if (@going_up && rider.dest_floor < @dest_floor) || (!@going_up && rider.dest_floor > @dest_floor)
+                            @dest_floor = rider.dest_floor
                         end
                         to_delete.unshift(index)
-                        if @current_floor == @dest_floor
+                        if @current_floor == @dest_floor  #If I have nowhere else to go, drop this person first
                             @dest_floor = rider.dest_floor
                         end
                     end
